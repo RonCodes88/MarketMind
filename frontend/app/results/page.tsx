@@ -152,16 +152,17 @@ export default function Results() {
                 {slogans.map((slogan, index) => (
                   <div
                     key={index}
-                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    className="flex items-center justify-between p-3 bg-muted/50 rounded-lg border hover:bg-muted/70 hover:border-border dark:hover:bg-muted/40 transition-all duration-200"
                   >
                     <span className="font-medium">{slogan}</span>
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => copyToClipboard(slogan, `slogan-${index}`)}
+                      className="hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transition-colors"
                     >
                       {copiedItems.has(`slogan-${index}`) ? (
-                        <Check className="w-4 h-4" />
+                        <Check className="w-4 h-4 text-green-500" />
                       ) : (
                         <Copy className="w-4 h-4" />
                       )}
@@ -192,7 +193,7 @@ export default function Results() {
                         {messages.map((message, index) => (
                           <div
                             key={index}
-                            className="flex items-start justify-between p-3 bg-muted/30 rounded-lg"
+                            className="flex items-start justify-between p-3 bg-muted/30 rounded-lg border hover:bg-muted/50 hover:border-border dark:hover:bg-muted/20 transition-all duration-200"
                           >
                             <span className="flex-1">{message}</span>
                             <Button
@@ -204,11 +205,12 @@ export default function Results() {
                                   `campaign-${category}-${index}`
                                 )
                               }
+                              className="hover:bg-accent/20 hover:text-accent-foreground dark:hover:bg-accent/10 transition-colors"
                             >
                               {copiedItems.has(
                                 `campaign-${category}-${index}`
                               ) ? (
-                                <Check className="w-4 h-4" />
+                                <Check className="w-4 h-4 text-green-500" />
                               ) : (
                                 <Copy className="w-4 h-4" />
                               )}
@@ -243,7 +245,7 @@ export default function Results() {
                       {posts.map((post, index) => (
                         <div
                           key={index}
-                          className="flex items-start justify-between p-4 border rounded-lg"
+                          className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/30 hover:border-primary/20 dark:hover:bg-muted/20 dark:hover:border-primary/30 transition-all duration-200"
                         >
                           <span className="flex-1 whitespace-pre-line">
                             {post}
@@ -257,9 +259,10 @@ export default function Results() {
                                 `social-${platform}-${index}`
                               )
                             }
+                            className="hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent dark:hover:text-accent-foreground transition-colors"
                           >
                             {copiedItems.has(`social-${platform}-${index}`) ? (
-                              <Check className="w-4 h-4" />
+                              <Check className="w-4 h-4 text-green-500" />
                             ) : (
                               <Copy className="w-4 h-4" />
                             )}
@@ -300,7 +303,7 @@ export default function Results() {
                     ].join("\n");
                     copyToClipboard(allContent, "all-content");
                   }}
-                  className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                  className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 dark:from-primary dark:to-purple-600 dark:hover:from-primary/80 dark:hover:to-purple-600/80 transition-all duration-200 hover:shadow-lg dark:hover:shadow-primary/20"
                 >
                   {copiedItems.has("all-content") ? (
                     <>

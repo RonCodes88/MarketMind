@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,45 +29,46 @@ export function Navigation() {
         <nav className="hidden md:flex items-center space-x-6">
           <Link
             href="/"
-            className={`transition-colors ${
+            className={`transition-colors hover:text-foreground ${
               pathname === "/"
                 ? "text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             Home
           </Link>
           <Link
             href="/dashboard"
-            className={`transition-colors ${
+            className={`transition-colors hover:text-foreground ${
               pathname === "/dashboard"
                 ? "text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             Products
           </Link>
           <Link
             href="/summary"
-            className={`transition-colors ${
+            className={`transition-colors hover:text-foreground ${
               pathname === "/summary"
                 ? "text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             Summary
           </Link>
           <Link
             href="/outreach"
-            className={`transition-colors ${
+            className={`transition-colors hover:text-foreground ${
               pathname === "/outreach"
                 ? "text-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground"
+                : "text-muted-foreground"
             }`}
           >
             Outreach
           </Link>
-          <Button variant="outline" size="sm">
+          <ThemeToggle />
+          <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground">
             Sign In
           </Button>
         </nav>
