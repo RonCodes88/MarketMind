@@ -1,22 +1,33 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Upload, Send, Sparkles, X, ImageIcon } from "lucide-react"
+import { useState, useRef } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Upload, Send, X, ImageIcon, Sparkles } from "lucide-react";
+import { Navigation } from "@/components/navigation";
 
-type BotMessage = { id: number; type: "bot"; content: string, image?: string }
-type UserMessage = { id: number; type: "user"; content: string; image?: string }
-type Message = BotMessage | UserMessage
-
+type BotMessage = { id: number; type: "bot"; content: string; image?: string };
+type UserMessage = {
+  id: number;
+  type: "user";
+  content: string;
+  image?: string;
+};
+type Message = BotMessage | UserMessage;
 
 export default function ProductAnalysisLanding() {
-  const [message, setMessage] = useState("")
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  const [message, setMessage] = useState("");
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
@@ -24,22 +35,22 @@ export default function ProductAnalysisLanding() {
       content:
         "Hi! I'm your AI product analyst. Share your product idea and I'll provide comprehensive market analysis, product reports, and branding suggestions. You can also upload an image of your product!",
     },
-  ])
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  ]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSendMessage = () => {
-    if (!message.trim() && !selectedImage) return
+    if (!message.trim() && !selectedImage) return;
 
     const newMessage = {
       id: messages.length + 1,
       type: "user" as const,
       content: message,
       image: selectedImage ? URL.createObjectURL(selectedImage) : undefined,
-    }
+    };
 
-    setMessages([...messages, newMessage])
-    setMessage("")
-    setSelectedImage(null)
+    setMessages([...messages, newMessage]);
+    setMessage("");
+    setSelectedImage(null);
 
     // Simulate AI response
     setTimeout(() => {
@@ -48,42 +59,21 @@ export default function ProductAnalysisLanding() {
         type: "bot" as const,
         content:
           "Great! I'm analyzing your product idea. Here's what I found:\n\n📊 **Market Analysis**: Strong potential in the target demographic\n📋 **Product Report**: Competitive advantages identified\n🎨 **Branding Ideas**: 3 compelling slogans generated\n\nWould you like me to dive deeper into any specific area?",
-      }
-      setMessages((prev) => [...prev, aiResponse])
-    }, 1500)
-  }
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    }, 1500);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedImage(file)
+      setSelectedImage(file);
     }
-  }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-bold text-foreground">ProductAI</span>
-          </div>
-          <nav className="hidden md:flex items-center space-x-6">
-            <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">
-              Features
-            </a>
-            <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
-              How it Works
-            </a>
-            <Button variant="outline" size="sm">
-              Sign In
-            </Button>
-          </nav>
-        </div>
-      </header>
+      <Navigation />
 
       {/* Hero Section */}
       <section className="py-12 px-4">
@@ -96,8 +86,8 @@ export default function ProductAnalysisLanding() {
             <span className="text-primary"> Market-Ready</span> Insights
           </h1>
           <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
-            Get comprehensive market analysis, detailed product reports, and creative branding suggestions for any
-            product idea in seconds.
+            Get comprehensive market analysis, detailed product reports, and
+            creative branding suggestions for any product idea in seconds.
           </p>
         </div>
       </section>
@@ -112,17 +102,26 @@ export default function ProductAnalysisLanding() {
                   <Sparkles className="w-5 h-5 text-primary" />
                   ProductAI Assistant
                 </CardTitle>
-                <CardDescription>Share your product idea and get instant insights</CardDescription>
+                <CardDescription>
+                  Share your product idea and get instant insights
+                </CardDescription>
               </div>
             </CardHeader>
 
             <CardContent className="flex-1 flex flex-col">
               <div className="flex-1 overflow-y-auto space-y-4 mb-4">
                 {messages.map((msg) => (
-                  <div key={msg.id} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start"}`}>
+                  <div
+                    key={msg.id}
+                    className={`flex ${
+                      msg.type === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
                     <div
                       className={`max-w-[80%] rounded-lg px-4 py-2 ${
-                        msg.type === "user" ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                        msg.type === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
                       }`}
                     >
                       {msg.image && (
@@ -142,8 +141,14 @@ export default function ProductAnalysisLanding() {
                 {selectedImage && (
                   <div className="flex items-center gap-2 p-2 bg-muted rounded-lg">
                     <ImageIcon className="w-4 h-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground flex-1">{selectedImage.name}</span>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedImage(null)}>
+                    <span className="text-sm text-muted-foreground flex-1">
+                      {selectedImage.name}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedImage(null)}
+                    >
                       <X className="w-3 h-3" />
                     </Button>
                   </div>
@@ -157,8 +162,8 @@ export default function ProductAnalysisLanding() {
                     className="flex-1 min-h-[60px] resize-none"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault()
-                        handleSendMessage()
+                        e.preventDefault();
+                        handleSendMessage();
                       }
                     }}
                   />
@@ -170,10 +175,18 @@ export default function ProductAnalysisLanding() {
                       accept="image/*"
                       className="hidden"
                     />
-                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
                       <Upload className="w-4 h-4" />
                     </Button>
-                    <Button size="sm" onClick={handleSendMessage} disabled={!message.trim() && !selectedImage}>
+                    <Button
+                      size="sm"
+                      onClick={handleSendMessage}
+                      disabled={!message.trim() && !selectedImage}
+                    >
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
@@ -183,7 +196,6 @@ export default function ProductAnalysisLanding() {
           </Card>
         </div>
       </section>
-
     </div>
-  )
+  );
 }
