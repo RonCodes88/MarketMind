@@ -20,6 +20,8 @@ export function Navigation() {
               ? "ProductAI Products"
               : pathname === "/summary"
               ? "ProductAI Summary"
+              : pathname === "/outreach"
+              ? "ProductAI Outreach"
               : "ProductAI"}
           </span>
         </Link>
@@ -54,15 +56,19 @@ export function Navigation() {
           >
             Summary
           </Link>
-          {pathname === "/dashboard" || pathname === "/summary" ? (
-            <Button variant="outline" size="sm">
-              Export Data
-            </Button>
-          ) : (
-            <Button variant="outline" size="sm">
-              Sign In
-            </Button>
-          )}
+          <Link
+            href="/outreach"
+            className={`transition-colors ${
+              pathname === "/outreach"
+                ? "text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Outreach
+          </Link>
+          <Button variant="outline" size="sm">
+            Sign In
+          </Button>
         </nav>
       </div>
     </header>

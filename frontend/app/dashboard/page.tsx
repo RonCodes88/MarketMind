@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   Card,
   CardContent,
@@ -16,9 +16,12 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Star,
+  Plus,
+  X,
 } from "lucide-react";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import Link from "next/link";
 
 // Products Mock Data
@@ -120,7 +123,89 @@ const userProducts = [
   },
 ];
 
+type Product = {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  status: string;
+  monthlyRevenue: number;
+  totalSales: number;
+  conversionRate: number;
+  rating: number;
+  reviews: number;
+  image: string;
+  color: string;
+  growth: number;
+};
+
 export default function Dashboard() {
+  const [products, setProducts] = useState<Product[]>(userProducts);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    description: "",
+    category: "",
+  });
+
+  const categories = [
+    "Health & Fitness",
+    "Education",
+    "Home & Garden",
+    "Productivity",
+    "Food & Drink",
+    "Technology",
+    "Entertainment",
+    "Business",
+  ];
+
+  const productEmojis = ["🚀", "⭐", "💡", "🎯", "🔥", "💎", "🌟", "🎨"];
+  const productColors = [
+    "bg-blue-500",
+    "bg-green-500",
+    "bg-purple-500",
+    "bg-red-500",
+    "bg-yellow-500",
+    "bg-pink-500",
+    "bg-indigo-500",
+    "bg-teal-500",
+  ];
+
+  const handleAddProduct = () => {
+    if (
+      !newProduct.name.trim() ||
+      !newProduct.description.trim() ||
+      !newProduct.category
+    ) {
+      return;
+    }
+
+    const randomEmoji =
+      productEmojis[Math.floor(Math.random() * productEmojis.length)];
+    const randomColor =
+      productColors[Math.floor(Math.random() * productColors.length)];
+
+    const product: Product = {
+      id: newProduct.name.toLowerCase().replace(/\s+/g, "-"),
+      name: newProduct.name,
+      description: newProduct.description,
+      category: newProduct.category,
+      status: "Planning",
+      monthlyRevenue: 0,
+      totalSales: 0,
+      conversionRate: 0,
+      rating: 0,
+      reviews: 0,
+      image: randomEmoji,
+      color: randomColor,
+      growth: 0,
+    };
+
+    setProducts([...products, product]);
+    setNewProduct({ name: "", description: "", category: "" });
+    setShowAddModal(false);
+  };
+
   return (
     <div
       className="min-h-screen bg-background font-sans"
@@ -140,14 +225,14 @@ export default function Dashboard() {
                 Manage and analyze your product portfolio
               </p>
             </div>
-            <Button>
+            <Button onClick={() => setShowAddModal(true)}>
               <Package className="w-4 h-4 mr-2" />
               Add New Product
             </Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {userProducts.map((product) => (
+            {products.map((product) => (
               <Card
                 key={product.id}
                 className="hover:shadow-lg transition-shadow"
@@ -252,6 +337,84 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Add Product Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-background border rounded-lg shadow-lg w-full max-w-md mx-4">
+            <div className="flex items-center justify-between p-4 border-b">
+              <h3 className="text-lg font-semibold">Add New Product</h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowAddModal(false)}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+            <div className="p-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Product Name
+                </label>
+                <input
+                  type="text"
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  placeholder="Enter product name..."
+                  value={newProduct.name}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, name: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Description
+                </label>
+                <Textarea
+                  placeholder="Describe your product..."
+                  value={newProduct.description}
+                  onChange={(e) =>
+                    setNewProduct({
+                      ...newProduct,
+                      description: e.target.value,
+                    })
+                  }
+                  className="min-h-[80px]"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">
+                  Category
+                </label>
+                <select
+                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
+                  value={newProduct.category}
+                  onChange={(e) =>
+                    setNewProduct({ ...newProduct, category: e.target.value })
+                  }
+                >
+                  <option value="">Select a category</option>
+                  {categories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 p-4 border-t">
+              <Button variant="outline" onClick={() => setShowAddModal(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddProduct}>
+                <Plus className="w-4 h-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
