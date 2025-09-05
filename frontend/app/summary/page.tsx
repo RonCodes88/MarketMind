@@ -206,7 +206,10 @@ const userProducts = [
 
 export default function Summary() {
   return (
-    <div className="min-h-screen bg-background">
+    <div
+      className="min-h-screen bg-background font-sans"
+      style={{ fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif' }}
+    >
       <Navigation />
 
       <div className="container mx-auto px-4 py-8">
