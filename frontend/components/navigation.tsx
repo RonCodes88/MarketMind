@@ -17,12 +17,12 @@ export function Navigation() {
           </div>
           <span className="text-xl font-bold text-foreground">
             {pathname === "/dashboard"
-              ? "ProductAI Products"
+              ? "MarketMind Products"
               : pathname === "/summary"
-              ? "ProductAI Summary"
+              ? "MarketMind Summary"
               : pathname === "/outreach"
-              ? "ProductAI Outreach"
-              : "ProductAI"}
+              ? "MarketMind Outreach"
+              : "MarketMind"}
           </span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6">

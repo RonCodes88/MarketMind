@@ -2,7 +2,7 @@
 
 import type React from "react";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,10 +41,36 @@ export default function ProductAnalysisLanding() {
       id: 1,
       type: "bot" as const,
       content:
-        "Hi! I'm your AI marketing assistant. Share your product idea and I'll instantly generate catchy slogans and campaign messaging strategies. You'll see a quick summary here, and can expand to view the full detailed results with copy-to-clipboard functionality!",
+        "Ready to drop your product and launch its story? Share your product idea and I'll craft the complete launch narrative - from market positioning to viral storytelling that turns your launch into a movement!",
     },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Animation states
+  const [showChatbot, setShowChatbot] = useState(false);
+  const [heroVisible, setHeroVisible] = useState(false);
+
+  // Scroll detection
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+
+      // Show chatbot when user scrolls down about 50% of viewport height
+      if (scrollY > windowHeight * 0.5) {
+        setShowChatbot(true);
+      }
+    };
+
+    // Trigger hero animation on mount
+    const timer = setTimeout(() => setHeroVisible(true), 100);
+
+    window.addEventListener("scroll", handleScroll);
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      clearTimeout(timer);
+    };
+  }, []);
 
   const handleSendMessage = () => {
     if (!message.trim() && !selectedImage) return;
@@ -63,35 +89,33 @@ export default function ProductAnalysisLanding() {
     setMessage("");
     setSelectedImage(null);
 
-    // Show AI response with summary and expand button
+    // Show AI response with launch story focus
     setTimeout(() => {
       const aiResponse = {
         id: messages.length + 2,
         type: "bot" as const,
-        content: `Great! I've analyzed "${productIdea}" and generated comprehensive marketing suggestions for you.
+        content: `🚀 **LAUNCH STORY INITIATED FOR "${productIdea}"**
 
-**Quick Summary:**
-🎯 **Top Slogan Ideas:**
-• "${productIdea} - Revolutionizing Your Experience"
-• "The Future is Here with ${productIdea}"
-• "${productIdea}: Where Innovation Meets Excellence"
+**🎯 Your Launch Narrative:**
+📖 **The Story**: From problem to breakthrough - "${productIdea}" isn't just a product, it's the hero of your customer's journey
+🎬 **The Hook**: "What if I told you that ${productIdea} could change everything you thought you knew about [category]?"
+⚡ **The Drop**: Strategic launch sequence designed to create anticipation, exclusivity, and viral momentum
 
-📢 **Campaign Message Highlights:**
-• Problem-solution focused messaging
-• Social proof and testimonials approach  
-• Emotional appeal strategies
-• Urgency and scarcity tactics
-• Clear value proposition messaging
+**🔥 Launch Campaign Highlights:**
+• **Pre-Launch Teasers**: Build mystery and anticipation
+• **Hero Story**: Position your product as the solution everyone's been waiting for
+• **Social Proof Pipeline**: Turn early adopters into story ambassadors
+• **Viral Launch Hooks**: Shareable moments that amplify your story
+• **Community Building**: Create a movement, not just customers
 
-📱 **Social Media Post Ideas:**
-• Instagram visual stories with trending hashtags
-• Twitter/X viral tweets for maximum engagement
-• LinkedIn professional insights and case studies
-• TikTok video concepts with trending sounds
-• Facebook community engagement posts
+**📱 Story-Driven Content:**
+• **Launch Announcement Posts**: Multi-platform story rollout
+• **Behind-the-Scenes**: The journey that led to this breakthrough
+• **Customer Hero Stories**: Real transformations, real impact
+• **Countdown Campaigns**: Building anticipation for the big drop
 
-Click "Expand Full Results" below to see detailed suggestions and copy all content!`,
-        productIdea: productIdea, // Store the product idea with the message
+Ready to turn your product drop into a legendary launch story? Click "Launch Full Story" to see your complete narrative strategy!`,
+        productIdea: productIdea,
       };
       setMessages((prev) => [...prev, aiResponse]);
     }, 1500);
@@ -106,35 +130,63 @@ Click "Expand Full Results" below to see detailed suggestions and copy all conte
 
   return (
     <div
-      className="min-h-screen bg-background font-sans"
+      className="min-h-screen bg-background font-sans scroll-smooth"
       style={{ fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif' }}
     >
       <Navigation />
 
       {/* Hero Section */}
-      <section className="py-16 px-4">
+      <section className="py-16 px-4 min-h-screen flex items-center">
         <div className="container mx-auto max-w-4xl text-center">
-          <Badge variant="secondary" className="mb-6">
-            AI-Powered Product Analysis
+          <Badge
+            variant="secondary"
+            className={`mb-6 transition-all duration-1000 delay-300 ${
+              heroVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            AI-Powered Product Launch
           </Badge>
 
           {/* Big MarketMind Title */}
           <div className="mb-8">
-            <h1 className="text-6xl md:text-8xl font-black text-foreground mb-4 tracking-tight">
+            <h1
+              className={`text-6xl md:text-8xl font-black text-foreground mb-4 tracking-tight transition-all duration-1000 delay-500 ${
+                heroVisible
+                  ? "opacity-100 translate-y-0 scale-100"
+                  : "opacity-0 translate-y-8 scale-95"
+              }`}
+            >
               <span className="bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent">
                 MarketMind
               </span>
             </h1>
-            <div className="w-24 h-1 bg-gradient-to-r from-primary to-purple-600 mx-auto mb-6"></div>
+            <div
+              className={`w-24 h-1 bg-gradient-to-r from-primary to-purple-600 mx-auto mb-6 transition-all duration-1000 delay-700 ${
+                heroVisible ? "opacity-100 scale-x-100" : "opacity-0 scale-x-0"
+              }`}
+            ></div>
           </div>
 
-          <h2 className="text-3xl md:text-5xl font-bold text-foreground mb-6 text-balance">
-            Turn Your Product Ideas Into
-            <span className="text-primary"> Market-Ready</span> Insights
+          <h2
+            className={`text-3xl md:text-5xl font-bold text-foreground mb-6 text-balance transition-all duration-1000 delay-900 ${
+              heroVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-6"
+            }`}
+          >
+            Drop the product. Launch the story.
           </h2>
-          <p className="text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto">
-            Get comprehensive market analysis, detailed product reports, and
-            creative branding suggestions for any product idea in seconds.
+          <p
+            className={`text-xl text-muted-foreground mb-8 text-pretty max-w-2xl mx-auto transition-all duration-1000 delay-1100 ${
+              heroVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-4"
+            }`}
+          >
+            All-in-one platform for market insights, product reports, branding
+            strategies, customer dashboards, and creator outreach.
           </p>
         </div>
       </section>
@@ -142,15 +194,21 @@ Click "Expand Full Results" below to see detailed suggestions and copy all conte
       {/* Chat Interface - Now directly on the page */}
       <section className="py-8 px-4">
         <div className="container mx-auto max-w-4xl">
-          <Card className="h-[700px] flex flex-col">
+          <Card
+            className={`h-[700px] flex flex-col transition-all duration-1000 ease-out ${
+              showChatbot
+                ? "opacity-100 translate-y-0 scale-100"
+                : "opacity-0 translate-y-12 scale-95"
+            }`}
+          >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4 flex-shrink-0">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Sparkles className="w-5 h-5 text-primary" />
-                  MarketMind Assistant
+                  MarketMind Launch Strategist
                 </CardTitle>
                 <CardDescription>
-                  Share your product idea and get instant insights
+                  Share your product idea and craft its legendary launch story
                 </CardDescription>
               </div>
             </CardHeader>
@@ -197,7 +255,7 @@ Click "Expand Full Results" below to see detailed suggestions and copy all conte
                             }
                             className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md dark:hover:shadow-white/20"
                           >
-                            Expand Full Results →
+                            Launch Full Story →
                           </Button>
                         </div>
                       )}
@@ -225,7 +283,7 @@ Click "Expand Full Results" below to see detailed suggestions and copy all conte
 
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder="Describe your product idea..."
+                    placeholder="Describe your product idea for launch..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="flex-1 min-h-[80px] max-h-[120px] resize-none"
