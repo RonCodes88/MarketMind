@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Send, X, ImageIcon, Sparkles } from "lucide-react";
+import { Upload, Send, X, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { Navigation } from "@/components/navigation";
+import { generateMarketingContent } from "@/lib/api";
 
 type BotMessage = {
   id: number;
@@ -45,6 +46,7 @@ export default function ProductAnalysisLanding() {
     },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Animation states
   const [showChatbot, setShowChatbot] = useState(false);
@@ -72,8 +74,9 @@ export default function ProductAnalysisLanding() {
     };
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim() && !selectedImage) return;
+    if (isGenerating) return;
 
     const newMessage = {
       id: messages.length + 1,
@@ -88,9 +91,48 @@ export default function ProductAnalysisLanding() {
     const productIdea = message.trim();
     setMessage("");
     setSelectedImage(null);
+    setIsGenerating(true);
 
-    // Show AI response with launch story focus
-    setTimeout(() => {
+    try {
+      // Try to generate actual marketing content
+      const marketingContent = await generateMarketingContent({
+        product_name: productIdea,
+        description: "",
+        target_audience: "",
+        industry: "",
+      });
+
+      // Success response with real data preview
+      const aiResponse = {
+        id: messages.length + 2,
+        type: "bot" as const,
+        content: `🚀 **LAUNCH STORY GENERATED FOR "${productIdea}"**
+
+**✨ Your AI-Generated Marketing Package:**
+
+🎯 **Slogans Created**: ${marketingContent.slogans.length} catchy taglines
+📢 **Campaign Messages**: ${marketingContent.campaign_messages.length} strategic approaches  
+📱 **Social Posts**: ${marketingContent.social_media_posts.length} ready-to-publish posts
+
+**🔥 Sample Preview:**
+• **Top Slogan**: "${marketingContent.slogans[0]}"
+• **Key Message**: "${marketingContent.campaign_messages[0]?.title}: ${marketingContent.campaign_messages[0]?.message.substring(0, 100)}..."
+• **Social Ready**: ${marketingContent.social_media_posts.length} posts for Instagram, Twitter, LinkedIn & more
+
+**📈 Complete Package Includes:**
+• Professional slogans & taglines
+• Strategic campaign messages (Problem-Solution, Social Proof, Emotional Appeal, Urgency)
+• Platform-optimized social media content
+• Copy-ready marketing materials
+
+Ready to launch your product story? Your complete marketing arsenal is waiting!`,
+        productIdea: productIdea,
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } catch (error) {
+      console.error("Failed to generate marketing content:", error);
+      
+      // Fallback response
       const aiResponse = {
         id: messages.length + 2,
         type: "bot" as const,
@@ -118,7 +160,9 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
         productIdea: productIdea,
       };
       setMessages((prev) => [...prev, aiResponse]);
-    }, 1500);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -312,9 +356,13 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
                     <Button
                       size="sm"
                       onClick={handleSendMessage}
-                      disabled={!message.trim() && !selectedImage}
+                      disabled={(!message.trim() && !selectedImage) || isGenerating}
                     >
-                      <Send className="w-4 h-4" />
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
