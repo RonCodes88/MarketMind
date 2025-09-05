@@ -1,18 +1,104 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Navigation } from "@/components/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Copy, Check, ArrowLeft, Sparkles } from "lucide-react";
+import { Copy, Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
+import {
+  generateMarketingContent,
+  MarketingResponse,
+  CampaignMessage,
+  SocialMediaPost,
+} from "@/lib/api";
 
 export default function Results() {
   const searchParams = useSearchParams();
-  const productIdea = searchParams.get("product") || "Your Product";
+  const productDescription = searchParams.get("product") || "Your Product";
   const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [marketingData, setMarketingData] = useState<MarketingResponse | null>(
+    null
+  );
+
+  // Fetch marketing content on component mount
+  useEffect(() => {
+    const fetchMarketingContent = async () => {
+      if (!productDescription || productDescription === "Your Product") {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        const response = await generateMarketingContent({
+          product_name: "", // Let Groq generate this
+          description: productDescription,
+          target_audience: "",
+          industry: "",
+        });
+
+        setMarketingData(response);
+      } catch (error) {
+        console.error("Failed to fetch marketing content:", error);
+        setError(
+          "Failed to generate marketing content. Please check if the backend service is running."
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMarketingContent();
+  }, [productDescription]);
+
+  // Get data to display (API response only)
+  const getDisplayData = () => {
+    if (marketingData) {
+      return {
+        slogans: marketingData.slogans,
+        campaignMessages: marketingData.campaign_messages,
+        socialMediaPosts: marketingData.social_media_posts,
+      };
+    }
+    return {
+      slogans: [],
+      campaignMessages: [],
+      socialMediaPosts: [],
+    };
+  };
+
+  const { slogans, campaignMessages, socialMediaPosts } = getDisplayData();
+
+  // Group campaign messages by title for better display
+  const groupedCampaignMessages = campaignMessages.reduce(
+    (acc: Record<string, string[]>, message: CampaignMessage) => {
+      if (!acc[message.title]) {
+        acc[message.title] = [];
+      }
+      acc[message.title].push(message.message);
+      return acc;
+    },
+    {}
+  );
+
+  // Group social media posts by platform
+  const groupedSocialPosts = socialMediaPosts.reduce(
+    (acc: Record<string, SocialMediaPost[]>, post: SocialMediaPost) => {
+      if (!acc[post.platform]) {
+        acc[post.platform] = [];
+      }
+      acc[post.platform].push(post);
+      return acc;
+    },
+    {}
+  );
 
   const copyToClipboard = async (text: string, itemId: string) => {
     try {
@@ -30,80 +116,95 @@ export default function Results() {
     }
   };
 
-  const slogans = [
-    `${productIdea} - Revolutionizing Your Experience`,
-    `The Future is Here with ${productIdea}`,
-    `${productIdea}: Where Innovation Meets Excellence`,
-    `Discover the Power of ${productIdea}`,
-    `${productIdea} - Beyond Your Expectations`,
-    `Transform Your World with ${productIdea}`,
-    `${productIdea}: The Smart Choice`,
-    `Unleash Potential with ${productIdea}`,
-  ];
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div
+        className="min-h-screen bg-background font-sans flex items-center justify-center"
+        style={{
+          fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <h2 className="text-xl font-semibold mb-2">
+            Generating Marketing Content
+          </h2>
+          <p className="text-muted-foreground">
+            Creating your personalized marketing package...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
-  const campaignMessages = {
-    "Problem-Solution": [
-      `Tired of outdated solutions? ${productIdea} solves what others can't.`,
-      `The problem everyone faces, ${productIdea} is the answer everyone needs.`,
-      `Why settle for less when ${productIdea} delivers more?`,
-    ],
-    "Social Proof": [
-      `Join thousands who've already transformed their experience with ${productIdea}.`,
-      `"${productIdea} changed everything for me" - Sarah M., Verified Customer`,
-      `Rated #1 by industry experts and loved by users worldwide.`,
-    ],
-    "Emotional Appeal": [
-      `Feel the difference ${productIdea} makes in your daily life.`,
-      `Experience the joy of having ${productIdea} by your side.`,
-      `${productIdea} - because you deserve the best.`,
-    ],
-    "Urgency & Scarcity": [
-      `Limited time offer: Get ${productIdea} before it's gone!`,
-      `Only 100 units of ${productIdea} left - secure yours now!`,
-      `Early bird special: ${productIdea} at an unbeatable price!`,
-    ],
-  };
+  // Show error state when no data is available
+  if (error && !marketingData) {
+    return (
+      <div
+        className="min-h-screen bg-background font-sans"
+        style={{
+          fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <Navigation />
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <Link href="/">
+            <Button variant="outline" className="mb-8">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Chat
+            </Button>
+          </Link>
 
-  const socialMediaPosts = {
-    Instagram: [
-      `✨ Just discovered ${productIdea} and I'm obsessed! 😍 Who else needs this in their life? #${productIdea.replace(
-        /\s+/g,
-        ""
-      )} #GameChanger #MustHave`,
-      `📸 Behind the scenes with ${productIdea} - the results speak for themselves! 💯 #Innovation #${productIdea.replace(
-        /\s+/g,
-        ""
-      )} #Results`,
-      `🔥 Hot take: ${productIdea} is about to change everything. You heard it here first! 🚀 #Trending #${productIdea.replace(
-        /\s+/g,
-        ""
-      )}`,
-    ],
-    Twitter: [
-      `🧵 Thread: Why ${productIdea} is the game-changer we've all been waiting for 👇`,
-      `Hot take: If you're not using ${productIdea} yet, you're missing out big time 🔥`,
-      `${productIdea} just dropped and it's exactly what we needed. The future is here! 🚀`,
-    ],
-    LinkedIn: [
-      `Excited to share my experience with ${productIdea}. Here's how it's transforming our industry approach:`,
-      `Professional insight: ${productIdea} represents a significant advancement in our field. Here's my analysis:`,
-      `Case study: How ${productIdea} delivered 300% ROI for our team in just 30 days.`,
-    ],
-    TikTok: [
-      `POV: You discover ${productIdea} and your life changes forever 🤯 #${productIdea.replace(
-        /\s+/g,
-        ""
-      )} #LifeHack #Viral`,
-      `Trying ${productIdea} for the first time... the results are INSANE! 😱 #${productIdea.replace(
-        /\s+/g,
-        ""
-      )} #MindBlown`,
-      `Rating ${productIdea} features until I find the best one ⭐ #${productIdea.replace(
-        /\s+/g,
-        ""
-      )} #Review`,
-    ],
-  };
+          <div className="text-center">
+            <div className="mb-8">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h1 className="text-3xl font-bold mb-4">
+                Unable to Generate Marketing Content
+              </h1>
+              <p className="text-muted-foreground text-lg mb-6 max-w-2xl mx-auto">
+                We couldn&apos;t generate marketing content for your product.
+                This might be because:
+              </p>
+            </div>
+
+            <Card className="max-w-2xl mx-auto text-left">
+              <CardContent className="pt-6">
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>
+                      The MarketMind backend service isn&apos;t running
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>Network connectivity issues</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>API service temporarily unavailable</span>
+                  </li>
+                </ul>
+
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Make sure the backend is running on port 8000, then try
+                    again.
+                  </p>
+                  <Button onClick={() => window.location.reload()}>
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -127,10 +228,14 @@ export default function Results() {
               <Sparkles className="w-4 h-4 mr-2" />
               Complete Marketing Package
             </Badge>
-            <h1 className="text-4xl font-bold mb-2">Marketing Results for</h1>
-            <h2 className="text-5xl font-black bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
-              {productIdea}
-            </h2>
+            {error && (
+              <div className="mb-4">
+                <Badge variant="destructive" className="mb-2">
+                  {error}
+                </Badge>
+              </div>
+            )}
+            <h1 className="text-4xl font-bold mb-2">Marketing Results</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Your comprehensive marketing toolkit with copy-ready slogans,
               campaign messages, and social media content.
@@ -178,12 +283,14 @@ export default function Results() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 📢 Campaign Message Strategies
-                <Badge variant="outline">4 approaches</Badge>
+                <Badge variant="outline">
+                  {Object.keys(groupedCampaignMessages).length} approaches
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {Object.entries(campaignMessages).map(
+                {Object.entries(groupedCampaignMessages).map(
                   ([category, messages]) => (
                     <div key={category}>
                       <h3 className="font-semibold text-lg mb-3 text-primary">
@@ -235,7 +342,7 @@ export default function Results() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {Object.entries(socialMediaPosts).map(([platform, posts]) => (
+                {Object.entries(groupedSocialPosts).map(([platform, posts]) => (
                   <div key={platform}>
                     <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
                       <span className="text-primary">{platform}</span>
@@ -247,15 +354,24 @@ export default function Results() {
                           key={index}
                           className="flex items-start justify-between p-4 border rounded-lg hover:bg-muted/30 hover:border-primary/20 dark:hover:bg-muted/20 dark:hover:border-primary/30 transition-all duration-200"
                         >
-                          <span className="flex-1 whitespace-pre-line">
-                            {post}
-                          </span>
+                          <div className="flex-1">
+                            <span className="whitespace-pre-line">
+                              {post.post}
+                            </span>
+                            {post.type && (
+                              <div className="mt-2">
+                                <Badge variant="outline" className="text-xs">
+                                  {post.type}
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"
                             onClick={() =>
                               copyToClipboard(
-                                post,
+                                post.post,
                                 `social-${platform}-${index}`
                               )
                             }
@@ -290,15 +406,18 @@ export default function Results() {
                       "SLOGANS & TAGLINES:",
                       ...slogans,
                       "\n\nCAMPAIGN MESSAGES:",
-                      ...Object.entries(campaignMessages).flatMap(
+                      ...Object.entries(groupedCampaignMessages).flatMap(
                         ([category, messages]) => [
                           `\n${category}:`,
                           ...messages,
                         ]
                       ),
                       "\n\nSOCIAL MEDIA POSTS:",
-                      ...Object.entries(socialMediaPosts).flatMap(
-                        ([platform, posts]) => [`\n${platform}:`, ...posts]
+                      ...Object.entries(groupedSocialPosts).flatMap(
+                        ([platform, posts]) => [
+                          `\n${platform}:`,
+                          ...posts.map((p) => p.post),
+                        ]
                       ),
                     ].join("\n");
                     copyToClipboard(allContent, "all-content");

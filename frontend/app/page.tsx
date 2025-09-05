@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Upload, Send, X, ImageIcon, Sparkles } from "lucide-react";
+import { Upload, Send, X, ImageIcon, Sparkles, Loader2 } from "lucide-react";
 import { Navigation } from "@/components/navigation";
+import { generateMarketingContent } from "@/lib/api";
 
 type BotMessage = {
   id: number;
@@ -41,10 +42,11 @@ export default function ProductAnalysisLanding() {
       id: 1,
       type: "bot" as const,
       content:
-        "Ready to drop your product and launch its story? Share your product idea and I'll craft the complete launch narrative - from market positioning to viral storytelling that turns your launch into a movement!",
+        "Ready to drop your product and launch its story? Share a detailed description of your product - what it does, who it's for, what problems it solves - and I'll craft the complete launch narrative from market positioning to viral storytelling that turns your launch into a movement!",
     },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Animation states
   const [showChatbot, setShowChatbot] = useState(false);
@@ -72,8 +74,9 @@ export default function ProductAnalysisLanding() {
     };
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim() && !selectedImage) return;
+    if (isGenerating) return;
 
     const newMessage = {
       id: messages.length + 1,
@@ -84,41 +87,91 @@ export default function ProductAnalysisLanding() {
 
     setMessages([...messages, newMessage]);
 
-    // Store product idea for later use
-    const productIdea = message.trim();
+    // Store product description for later use
+    const productDescription = message.trim();
     setMessage("");
     setSelectedImage(null);
+    setIsGenerating(true);
 
-    // Show AI response with launch story focus
-    setTimeout(() => {
+    try {
+      // Generate actual marketing content using the full description
+      // Let Groq determine the product name from the description
+      const marketingContent = await generateMarketingContent({
+        product_name: "", // Let Groq generate this
+        description: productDescription,
+        target_audience: "",
+        industry: "",
+      });
+
+      // Success response with actual Groq-generated content
+      const formatContent = () => {
+        let content = `🚀 **${marketingContent.product_name}** - Marketing Package Generated!\n\n`;
+
+        // Add slogans
+        if (marketingContent.slogans.length > 0) {
+          content += `**🎯 Slogans & Taglines:**\n`;
+          marketingContent.slogans.forEach((slogan, index) => {
+            content += `${index + 1}. ${slogan}\n`;
+          });
+          content += `\n`;
+        }
+
+        // Add campaign messages
+        if (marketingContent.campaign_messages.length > 0) {
+          content += `**📢 Campaign Messages:**\n`;
+          marketingContent.campaign_messages.forEach((msg, index) => {
+            content += `${index + 1}. **${msg.title}**: ${msg.message}\n\n`;
+          });
+        }
+
+        // Add social media posts
+        if (marketingContent.social_media_posts.length > 0) {
+          content += `**📱 Social Media Posts:**\n`;
+          marketingContent.social_media_posts.forEach((post, index) => {
+            content += `${index + 1}. **${post.platform}** (${post.type}):\n${
+              post.post
+            }\n\n`;
+          });
+        }
+
+        content += `Click "Launch Full Story" below to see your complete marketing toolkit!`;
+        return content;
+      };
+
       const aiResponse = {
         id: messages.length + 2,
         type: "bot" as const,
-        content: `🚀 **LAUNCH STORY INITIATED FOR "${productIdea}"**
-
-**🎯 Your Launch Narrative:**
-📖 **The Story**: From problem to breakthrough - "${productIdea}" isn't just a product, it's the hero of your customer's journey
-🎬 **The Hook**: "What if I told you that ${productIdea} could change everything you thought you knew about [category]?"
-⚡ **The Drop**: Strategic launch sequence designed to create anticipation, exclusivity, and viral momentum
-
-**🔥 Launch Campaign Highlights:**
-• **Pre-Launch Teasers**: Build mystery and anticipation
-• **Hero Story**: Position your product as the solution everyone's been waiting for
-• **Social Proof Pipeline**: Turn early adopters into story ambassadors
-• **Viral Launch Hooks**: Shareable moments that amplify your story
-• **Community Building**: Create a movement, not just customers
-
-**📱 Story-Driven Content:**
-• **Launch Announcement Posts**: Multi-platform story rollout
-• **Behind-the-Scenes**: The journey that led to this breakthrough
-• **Customer Hero Stories**: Real transformations, real impact
-• **Countdown Campaigns**: Building anticipation for the big drop
-
-Ready to turn your product drop into a legendary launch story? Click "Launch Full Story" to see your complete narrative strategy!`,
-        productIdea: productIdea,
+        content: formatContent(),
+        productIdea: productDescription,
       };
       setMessages((prev) => [...prev, aiResponse]);
-    }, 1500);
+    } catch (error) {
+      console.error("Failed to generate marketing content:", error);
+
+      // Error response - no fallback mock data
+      const aiResponse = {
+        id: messages.length + 2,
+        type: "bot" as const,
+        content: `❌ **Unable to Generate Marketing Content**
+
+I'm having trouble connecting to the MarketMind AI service right now. This could be because:
+
+• The backend service isn't running
+• Network connectivity issues
+• API service temporarily unavailable
+
+**To fix this:**
+1. Make sure the MarketMind backend is running on port 8000
+2. Check your network connection
+3. Try again in a few moments
+
+Would you like to try again, or would you prefer to start the backend service first?`,
+        productIdea: productDescription,
+      };
+      setMessages((prev) => [...prev, aiResponse]);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -283,7 +336,7 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
 
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder="Describe your product idea for launch..."
+                    placeholder="Describe your product in detail - what it does, who it's for, what problem it solves, key features, etc..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="flex-1 min-h-[80px] max-h-[120px] resize-none"
@@ -312,9 +365,15 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
                     <Button
                       size="sm"
                       onClick={handleSendMessage}
-                      disabled={!message.trim() && !selectedImage}
+                      disabled={
+                        (!message.trim() && !selectedImage) || isGenerating
+                      }
                     >
-                      <Send className="w-4 h-4" />
+                      {isGenerating ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Send className="w-4 h-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
