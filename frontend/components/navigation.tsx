@@ -16,7 +16,11 @@ export function Navigation() {
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
           <span className="text-xl font-bold text-foreground">
-            {pathname === "/dashboard" ? "ProductAI Dashboard" : "ProductAI"}
+            {pathname === "/dashboard"
+              ? "ProductAI Products"
+              : pathname === "/summary"
+              ? "ProductAI Summary"
+              : "ProductAI"}
           </span>
         </Link>
         <nav className="hidden md:flex items-center space-x-6">
@@ -38,9 +42,19 @@ export function Navigation() {
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Dashboard
+            Products
           </Link>
-          {pathname === "/dashboard" ? (
+          <Link
+            href="/summary"
+            className={`transition-colors ${
+              pathname === "/summary"
+                ? "text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Summary
+          </Link>
+          {pathname === "/dashboard" || pathname === "/summary" ? (
             <Button variant="outline" size="sm">
               Export Data
             </Button>
