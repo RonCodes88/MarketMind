@@ -253,7 +253,7 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
                                 )}`
                               )
                             }
-                            className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md dark:hover:shadow-white/20"
+                            className="text-xs bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-md dark:hover:shadow-primary/20 transition-all duration-200"
                           >
                             Launch Full Story →
                           </Button>
