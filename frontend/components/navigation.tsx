@@ -23,6 +23,8 @@ export function Navigation() {
               ? "MarketMind Summary"
               : pathname === "/outreach"
               ? "MarketMind Outreach"
+              : pathname === "/builder"
+              ? "MarketMind Builder"
               : "MarketMind"}
           </span>
         </Link>
@@ -67,8 +69,18 @@ export function Navigation() {
           >
             Outreach
           </Link>
+          <Link
+            href="/builder"
+            className={`transition-colors ${
+              pathname === "/builder"
+                ? "text-foreground font-medium"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Builder
+          </Link>
           <ThemeToggle />
-          <Button variant="outline" size="sm" className="hover:bg-accent hover:text-accent-foreground">
+          <Button variant="outline" size="sm">
             Sign In
           </Button>
         </nav>
