@@ -66,7 +66,11 @@ async def health_check():
 async def generate_slogans(request: ProductRequest):
     """Generate catchy slogans for a product"""
     try:
-        slogans = generate_product_slogans(request.product_name)
+        product_info = request.description if request.description.strip() else request.product_name
+        if not product_info.strip():
+            raise HTTPException(status_code=400, detail="Product name or description is required")
+        product_name = request.product_name if request.product_name.strip() else generate_product_name(product_info)
+        slogans = generate_product_slogans(product_info, product_name)
         return SloganResponse(slogans=slogans)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating slogans: {str(e)}")
@@ -76,7 +80,11 @@ async def generate_slogans(request: ProductRequest):
 async def generate_campaign_messages(request: ProductRequest):
     """Generate campaign messages for a product"""
     try:
-        messages = generate_product_campaign_messages(request.product_name)
+        product_info = request.description if request.description.strip() else request.product_name
+        if not product_info.strip():
+            raise HTTPException(status_code=400, detail="Product name or description is required")
+        product_name = request.product_name if request.product_name.strip() else generate_product_name(product_info)
+        messages = generate_product_campaign_messages(product_info, product_name)
         return CampaignMessagesResponse(messages=messages)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating campaign messages: {str(e)}")
@@ -86,7 +94,11 @@ async def generate_campaign_messages(request: ProductRequest):
 async def generate_social_media_posts(request: ProductRequest):
     """Generate social media posts for a product"""
     try:
-        posts = generate_product_social_posts(request.product_name)
+        product_info = request.description if request.description.strip() else request.product_name
+        if not product_info.strip():
+            raise HTTPException(status_code=400, detail="Product name or description is required")
+        product_name = request.product_name if request.product_name.strip() else generate_product_name(product_info)
+        posts = generate_product_social_posts(product_info, product_name)
         return SocialMediaPostsResponse(posts=posts)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error generating social media posts: {str(e)}")
@@ -96,12 +108,25 @@ async def generate_social_media_posts(request: ProductRequest):
 async def generate_marketing_content(request: ProductRequest):
     """Generate complete marketing content package for a product"""
     try:
-        slogans = generate_product_slogans(request.product_name)
-        messages = generate_product_campaign_messages(request.product_name)
-        posts = generate_product_social_posts(request.product_name)
+        # Use description if available, otherwise fall back to product_name
+        product_info = request.description if request.description.strip() else request.product_name
+        
+        # Validate that we have some product information
+        if not product_info.strip():
+            raise HTTPException(status_code=400, detail="Product name or description is required")
+        
+        # Generate product name first if not provided
+        if not request.product_name.strip():
+            product_name = generate_product_name(product_info)
+        else:
+            product_name = request.product_name
+            
+        slogans = generate_product_slogans(product_info, product_name)
+        messages = generate_product_campaign_messages(product_info, product_name)
+        posts = generate_product_social_posts(product_info, product_name)
         
         return MarketingResponse(
-            product_name=request.product_name,
+            product_name=product_name,
             slogans=slogans,
             campaign_messages=messages,
             social_media_posts=posts,
@@ -111,17 +136,103 @@ async def generate_marketing_content(request: ProductRequest):
         raise HTTPException(status_code=500, detail=f"Error generating marketing content: {str(e)}")
 
 # Helper functions for content generation
-def generate_product_slogans(product_name: str) -> list[str]:
+def generate_product_name(product_description: str) -> str:
+    """Generate a catchy product name from description using Groq AI"""
+    try:
+        prompt = f"""Extract or generate a simple product name from this description:
+
+{product_description}
+
+Rules:
+- If a product name already exists in the description, return ONLY that name
+- If no name exists, create a simple 1-2 word name
+- No explanations, no extra text, no quotes
+- Just the name itself
+
+Examples:
+- "MacBook Pro laptop for sale" → "MacBook Pro"
+- "iPhone 15 in good condition" → "iPhone 15"
+- "A fitness tracking app" → "FitTracker"
+
+Return ONLY the product name:"""
+        
+        response = client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.7,
+            max_tokens=50
+        )
+        
+        product_name = response.choices[0].message.content.strip().strip('"\'')
+        
+        # Clean up the response - remove any explanatory text
+        lines = product_name.split('\n')
+        clean_name = lines[0].strip()
+        
+        # Remove common prefixes that might be added
+        prefixes_to_remove = [
+            "Based on the description",
+            "The product name is",
+            "Product name:",
+            "Name:",
+            "Answer:",
+            "Result:",
+        ]
+        
+        for prefix in prefixes_to_remove:
+            if clean_name.lower().startswith(prefix.lower()):
+                clean_name = clean_name[len(prefix):].strip()
+                break
+        
+        # Remove quotes and extra punctuation
+        clean_name = clean_name.strip('"\'.,!?:')
+        
+        return clean_name
+    except Exception as e:
+        print(f"Groq API error for product name: {e}")
+        # Fallback: try to extract product name from description
+        description_lower = product_description.lower()
+        
+        # Common product patterns
+        import re
+        
+        # Look for quoted product names
+        quoted_match = re.search(r'"([^"]+)"', product_description)
+        if quoted_match:
+            return quoted_match.group(1)
+        
+        # Look for common product patterns
+        patterns = [
+            r'\b(iPhone|iPad|MacBook|iMac|Apple Watch)\s*\w*',
+            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:app|software|tool|platform|service)',
+            r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:for|that|which)',
+        ]
+        
+        for pattern in patterns:
+            match = re.search(pattern, product_description, re.IGNORECASE)
+            if match:
+                return match.group(1).strip()
+        
+        # Last resort: take first few meaningful words
+        words = [word for word in product_description.split()[:3] if len(word) > 2]
+        return " ".join(words).title() if words else "Your Product"
+
+def generate_product_slogans(product_description: str, product_name: str = "") -> list[str]:
     """Generate slogans for a product using Groq AI"""
     try:
-        prompt = f"""Generate 5 catchy, memorable slogans for a product called "{product_name}". 
-        Each slogan should be:
-        - Under 10 words
-        - Memorable and catchy
-        - Highlight key benefits or emotions
-        - Suitable for marketing campaigns
-        
-        Return only a JSON array of strings, no other text."""
+        context = f"Product Name: {product_name}\nProduct Description: {product_description}" if product_name else f"Product Description: {product_description}"
+        prompt = f"""Generate 5 catchy, memorable slogans for this product:
+
+{context}
+
+Each slogan should be:
+- Under 10 words
+- Memorable and catchy
+- Highlight key benefits or emotions
+- Suitable for marketing campaigns
+- Use the product name when appropriate
+
+Return ONLY a valid JSON array of strings with no additional text, explanations, or formatting. Example: ["slogan 1", "slogan 2", "slogan 3"]"""
         
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",  # High quality model
@@ -130,39 +241,56 @@ def generate_product_slogans(product_name: str) -> list[str]:
             max_tokens=200
         )
         
-        content = response.choices[0].message.content
-        slogans = json.loads(content)
+        content = response.choices[0].message.content.strip()
+        # Try to extract JSON from the response
+        try:
+            slogans = json.loads(content)
+        except json.JSONDecodeError:
+            # If JSON parsing fails, try to extract JSON from the response
+            import re
+            json_match = re.search(r'\[.*\]', content, re.DOTALL)
+            if json_match:
+                slogans = json.loads(json_match.group())
+            else:
+                raise ValueError("No valid JSON found in response")
         return slogans
     except Exception as e:
         print(f"Groq API error for slogans: {e}")
-        # Fallback to placeholder content
+        # Fallback to placeholder content using product name
+        name = product_name if product_name else "Your Product"
         return [
-            f"{product_name} - Revolutionizing Your Experience",
-            f"The Future is Here with {product_name}",
-            f"{product_name}: Where Innovation Meets Excellence",
-            f"Transform Your Life with {product_name}",
-            f"{product_name} - Simply Better, Simply Smarter"
+            f"{name} - Revolutionizing Your Experience",
+            f"The Future is Here with {name}",
+            f"{name}: Where Innovation Meets Excellence",
+            f"Transform Your Life with {name}",
+            f"{name} - Simply Better, Simply Smarter"
         ]
 
-def generate_product_campaign_messages(product_name: str) -> list[CampaignMessage]:
+def generate_product_campaign_messages(product_description: str, product_name: str = "") -> list[CampaignMessage]:
     """Generate campaign messages for a product using Groq AI"""
     try:
-        prompt = f"""Generate 5 compelling campaign messages for a product called "{product_name}". 
-        Each message should have a title and content following these themes:
-        1. Problem-Solution Focus
-        2. Social Proof
-        3. Emotional Appeal  
-        4. Urgency & Scarcity
-        5. Value Proposition
-        
-        Return as JSON array with objects containing "title" and "message" fields.
-        Each message should be 2-3 sentences, persuasive and marketing-focused.
-        
-        Example format:
-        [
-            {{"title": "Problem-Solution Focus", "message": "Your message here..."}},
-            {{"title": "Social Proof", "message": "Your message here..."}}
-        ]"""
+        context = f"Product Name: {product_name}\nProduct Description: {product_description}" if product_name else f"Product Description: {product_description}"
+        prompt = f"""Generate 5 compelling campaign messages for this product:
+
+{context}
+
+Each message should have a title and content following these themes:
+1. Problem-Solution Focus
+2. Social Proof
+3. Emotional Appeal  
+4. Urgency & Scarcity
+5. Value Proposition
+
+The messages should be based on the actual product description and what it does.
+Use the product name when appropriate in the messages.
+Return as JSON array with objects containing "title" and "message" fields.
+Each message should be 2-3 sentences, persuasive and marketing-focused.
+
+Return ONLY a valid JSON array with no additional text, explanations, or formatting. Example:
+[
+    {{"title": "Problem-Solution Focus", "message": "Your message here..."}},
+    {{"title": "Social Proof", "message": "Your message here..."}}
+]"""
         
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -171,55 +299,70 @@ def generate_product_campaign_messages(product_name: str) -> list[CampaignMessag
             max_tokens=800
         )
         
-        content = response.choices[0].message.content
-        messages_data = json.loads(content)
+        content = response.choices[0].message.content.strip()
+        # Try to extract JSON from the response
+        try:
+            messages_data = json.loads(content)
+        except json.JSONDecodeError:
+            # If JSON parsing fails, try to extract JSON from the response
+            import re
+            json_match = re.search(r'\[.*\]', content, re.DOTALL)
+            if json_match:
+                messages_data = json.loads(json_match.group())
+            else:
+                raise ValueError("No valid JSON found in response")
         return [CampaignMessage(**msg) for msg in messages_data]
     except Exception as e:
         print(f"Groq API error for campaign messages: {e}")
-        # Fallback to placeholder content
+        # Fallback to placeholder content using product name
+        name = product_name if product_name else "Your Product"
         return [
             CampaignMessage(
                 title="Problem-Solution Focus",
-                message=f"Tired of outdated solutions? {product_name} brings cutting-edge technology to solve your everyday challenges. Experience the difference innovation makes."
+                message=f"Tired of outdated solutions? {name} brings cutting-edge technology to solve your everyday challenges. Experience the difference innovation makes."
             ),
             CampaignMessage(
                 title="Social Proof",
-                message=f"Join thousands of satisfied customers who have already discovered the power of {product_name}. Don't get left behind – be part of the revolution."
+                message=f"Join thousands of satisfied customers who have already discovered the power of {name}. Don't get left behind – be part of the revolution."
             ),
             CampaignMessage(
                 title="Emotional Appeal",
-                message=f"Imagine a world where your daily tasks become effortless. {product_name} doesn't just promise change – it delivers transformation that you'll feel from day one."
+                message=f"Imagine a world where your daily tasks become effortless. {name} doesn't just promise change – it delivers transformation that you'll feel from day one."
             ),
             CampaignMessage(
                 title="Urgency & Scarcity",
-                message=f"Limited time offer: Be among the first to experience {product_name}. Early adopters get exclusive benefits and priority support. Act now before it's too late."
+                message=f"Limited time offer: Be among the first to experience {name}. Early adopters get exclusive benefits and priority support. Act now before it's too late."
             ),
             CampaignMessage(
                 title="Value Proposition",
-                message=f"Why settle for ordinary when you can have extraordinary? {product_name} combines premium quality with unbeatable value, giving you more for less."
+                message=f"Why settle for ordinary when you can have extraordinary? {name} combines premium quality with unbeatable value, giving you more for less."
             )
         ]
 
-def generate_product_social_posts(product_name: str) -> list[SocialMediaPost]:
+def generate_product_social_posts(product_description: str, product_name: str = "") -> list[SocialMediaPost]:
     """Generate social media posts for a product using Groq AI"""
     try:
-        prompt = f"""Generate 5 social media posts for a product called "{product_name}" across different platforms:
-        
-        Create posts for: Instagram, Twitter/X, LinkedIn, TikTok, Facebook
-        
-        Each post should:
-        - Be platform-appropriate (length, style, hashtags)
-        - Include relevant emojis and hashtags
-        - Have engaging, shareable content
-        - Match the platform's typical content style
-        
-        Return as JSON array with "platform", "post", and "type" fields.
-        
-        Example format:
-        [
-            {{"platform": "Instagram", "post": "Your Instagram post here...", "type": "Visual Story"}},
-            {{"platform": "Twitter/X", "post": "Your Twitter post here...", "type": "Viral Tweet"}}
-        ]"""
+        context = f"Product Name: {product_name}\nProduct Description: {product_description}" if product_name else f"Product Description: {product_description}"
+        prompt = f"""Generate 5 social media posts for this product:
+
+{context}
+
+Create posts for: Instagram, Twitter/X, LinkedIn, TikTok, Facebook
+
+Each post should:
+- Be platform-appropriate (length, style, hashtags)
+- Include relevant emojis and hashtags
+- Have engaging, shareable content
+- Match the platform's typical content style
+- Use the product name when appropriate
+
+Return as JSON array with "platform", "post", and "type" fields.
+
+Return ONLY a valid JSON array with no additional text, explanations, or formatting. Example:
+[
+    {{"platform": "Instagram", "post": "Your Instagram post here...", "type": "Visual Story"}},
+    {{"platform": "Twitter/X", "post": "Your Twitter post here...", "type": "Viral Tweet"}}
+]"""
         
         response = client.chat.completions.create(
             model="llama-3.1-8b-instant",
@@ -228,37 +371,48 @@ def generate_product_social_posts(product_name: str) -> list[SocialMediaPost]:
             max_tokens=1000
         )
         
-        content = response.choices[0].message.content
-        posts_data = json.loads(content)
+        content = response.choices[0].message.content.strip()
+        # Try to extract JSON from the response
+        try:
+            posts_data = json.loads(content)
+        except json.JSONDecodeError:
+            # If JSON parsing fails, try to extract JSON from the response
+            import re
+            json_match = re.search(r'\[.*\]', content, re.DOTALL)
+            if json_match:
+                posts_data = json.loads(json_match.group())
+            else:
+                raise ValueError("No valid JSON found in response")
         return [SocialMediaPost(**post) for post in posts_data]
     except Exception as e:
         print(f"Groq API error for social posts: {e}")
-        # Fallback to placeholder content
-        product_hashtag = product_name.replace(" ", "").replace("-", "")
+        # Fallback to placeholder content using product name
+        name = product_name if product_name else "Your Product"
+        product_hashtag = name.replace(" ", "").replace("-", "")
         return [
             SocialMediaPost(
                 platform="Instagram",
-                post=f"✨ Meet {product_name} - the game-changer you've been waiting for! 🚀\n\nSwipe to see how it's transforming lives daily 👉\n\n#{product_hashtag} #Innovation #GameChanger #TechLife",
+                post=f"✨ Meet {name} - the game-changer you've been waiting for! 🚀\n\nSwipe to see how it's transforming lives daily 👉\n\n#{product_hashtag} #Innovation #GameChanger #TechLife",
                 type="Visual Story"
             ),
             SocialMediaPost(
                 platform="Twitter/X",
-                post=f"🔥 Hot take: {product_name} is about to change everything.\n\nWhat took hours now takes minutes. What seemed impossible is now effortless.\n\nThe future is here. 🚀\n\n#{product_hashtag} #ProductLaunch",
+                post=f"🔥 Hot take: {name} is about to change everything.\n\nWhat took hours now takes minutes. What seemed impossible is now effortless.\n\nThe future is here. 🚀\n\n#{product_hashtag} #ProductLaunch",
                 type="Viral Tweet"
             ),
             SocialMediaPost(
                 platform="LinkedIn",
-                post=f"I've been testing {product_name} for the past month, and the results speak for themselves.\n\n• 3x faster workflow\n• 50% less manual work\n• Seamless integration\n\nThis isn't just another product—it's a paradigm shift.\n\nWhat productivity challenges are you facing that {product_name} could solve?\n\n#ProductivityHack #Innovation #{product_hashtag}",
+                post=f"I've been testing {name} for the past month, and the results speak for themselves.\n\n• 3x faster workflow\n• 50% less manual work\n• Seamless integration\n\nThis isn't just another product—it's a paradigm shift.\n\nWhat productivity challenges are you facing that {name} could solve?\n\n#ProductivityHack #Innovation #{product_hashtag}",
                 type="Professional Insight"
             ),
             SocialMediaPost(
                 platform="TikTok",
-                post=f"POV: You discover {product_name} and your life gets 10x easier 😱\n\n*Shows before vs after scenarios*\n\nWait for the plot twist at the end! 🤯\n\n#{product_hashtag}Check #LifeHack #ProductReview #GameChanger",
+                post=f"POV: You discover {name} and your life gets 10x easier 😱\n\n*Shows before vs after scenarios*\n\nWait for the plot twist at the end! 🤯\n\n#{product_hashtag}Check #LifeHack #ProductReview #GameChanger",
                 type="Viral Video"
             ),
             SocialMediaPost(
                 platform="Facebook",
-                post=f"🎯 Calling all [target audience]!\n\nTired of [common pain point]? {product_name} has your back!\n\n✅ Easy to use\n✅ Proven results\n✅ Money-back guarantee\n\nOver 1,000 happy customers can't be wrong. Join the {product_name} family today!\n\n👇 Comment 'INTERESTED' for early access",
+                post=f"🎯 Calling all [target audience]!\n\nTired of [common pain point]? {name} has your back!\n\n✅ Easy to use\n✅ Proven results\n✅ Money-back guarantee\n\nOver 1,000 happy customers can't be wrong. Join the {name} family today!\n\n👇 Comment 'INTERESTED' for early access",
                 type="Community Engagement"
             )
         ]

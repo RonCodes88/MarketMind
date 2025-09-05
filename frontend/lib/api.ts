@@ -1,6 +1,6 @@
 // API client for MarketMind backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8002';
-console.log('API_BASE_URL:', API_BASE_URL);
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+console.log("API_BASE_URL:", API_BASE_URL);
 
 // API Response Types (matching backend schemas)
 export interface ProductRequest {
@@ -60,9 +60,9 @@ class MarketMindAPI {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     const defaultHeaders = {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
       ...options.headers,
     };
 
@@ -85,39 +85,54 @@ class MarketMindAPI {
 
   // Health check endpoint
   async healthCheck(): Promise<HealthResponse> {
-    return this.makeRequest<HealthResponse>('/health');
+    return this.makeRequest<HealthResponse>("/health");
   }
 
   // Generate slogans
   async generateSlogans(request: ProductRequest): Promise<SloganResponse> {
-    return this.makeRequest<SloganResponse>('/api/generate/slogans', {
-      method: 'POST',
+    return this.makeRequest<SloganResponse>("/api/generate/slogans", {
+      method: "POST",
       body: JSON.stringify(request),
     });
   }
 
   // Generate campaign messages
-  async generateCampaignMessages(request: ProductRequest): Promise<CampaignMessagesResponse> {
-    return this.makeRequest<CampaignMessagesResponse>('/api/generate/campaign-messages', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  async generateCampaignMessages(
+    request: ProductRequest
+  ): Promise<CampaignMessagesResponse> {
+    return this.makeRequest<CampaignMessagesResponse>(
+      "/api/generate/campaign-messages",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      }
+    );
   }
 
   // Generate social media posts
-  async generateSocialPosts(request: ProductRequest): Promise<SocialMediaPostsResponse> {
-    return this.makeRequest<SocialMediaPostsResponse>('/api/generate/social-posts', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  async generateSocialPosts(
+    request: ProductRequest
+  ): Promise<SocialMediaPostsResponse> {
+    return this.makeRequest<SocialMediaPostsResponse>(
+      "/api/generate/social-posts",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      }
+    );
   }
 
   // Generate complete marketing content
-  async generateMarketingContent(request: ProductRequest): Promise<MarketingResponse> {
-    return this.makeRequest<MarketingResponse>('/api/generate/marketing-content', {
-      method: 'POST',
-      body: JSON.stringify(request),
-    });
+  async generateMarketingContent(
+    request: ProductRequest
+  ): Promise<MarketingResponse> {
+    return this.makeRequest<MarketingResponse>(
+      "/api/generate/marketing-content",
+      {
+        method: "POST",
+        body: JSON.stringify(request),
+      }
+    );
   }
 
   // Check if backend is available
@@ -126,7 +141,7 @@ class MarketMindAPI {
       await this.healthCheck();
       return true;
     } catch (error) {
-      console.warn('Backend health check failed:', error);
+      console.warn("Backend health check failed:", error);
       return false;
     }
   }
@@ -137,8 +152,12 @@ export const api = new MarketMindAPI();
 
 // Export individual functions properly bound to the API instance
 export const healthCheck = () => api.healthCheck();
-export const generateSlogans = (request: ProductRequest) => api.generateSlogans(request);
-export const generateCampaignMessages = (request: ProductRequest) => api.generateCampaignMessages(request);
-export const generateSocialPosts = (request: ProductRequest) => api.generateSocialPosts(request);
-export const generateMarketingContent = (request: ProductRequest) => api.generateMarketingContent(request);
+export const generateSlogans = (request: ProductRequest) =>
+  api.generateSlogans(request);
+export const generateCampaignMessages = (request: ProductRequest) =>
+  api.generateCampaignMessages(request);
+export const generateSocialPosts = (request: ProductRequest) =>
+  api.generateSocialPosts(request);
+export const generateMarketingContent = (request: ProductRequest) =>
+  api.generateMarketingContent(request);
 export const isBackendAvailable = () => api.isBackendAvailable();

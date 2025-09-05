@@ -42,7 +42,7 @@ export default function ProductAnalysisLanding() {
       id: 1,
       type: "bot" as const,
       content:
-        "Ready to drop your product and launch its story? Share your product idea and I'll craft the complete launch narrative - from market positioning to viral storytelling that turns your launch into a movement!",
+        "Ready to drop your product and launch its story? Share a detailed description of your product - what it does, who it's for, what problems it solves - and I'll craft the complete launch narrative from market positioning to viral storytelling that turns your launch into a movement!",
     },
   ]);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -87,77 +87,86 @@ export default function ProductAnalysisLanding() {
 
     setMessages([...messages, newMessage]);
 
-    // Store product idea for later use
-    const productIdea = message.trim();
+    // Store product description for later use
+    const productDescription = message.trim();
     setMessage("");
     setSelectedImage(null);
     setIsGenerating(true);
 
     try {
-      // Try to generate actual marketing content
+      // Generate actual marketing content using the full description
+      // Let Groq determine the product name from the description
       const marketingContent = await generateMarketingContent({
-        product_name: productIdea,
-        description: "",
+        product_name: "", // Let Groq generate this
+        description: productDescription,
         target_audience: "",
         industry: "",
       });
 
-      // Success response with real data preview
+      // Success response with actual Groq-generated content
+      const formatContent = () => {
+        let content = `🚀 **${marketingContent.product_name}** - Marketing Package Generated!\n\n`;
+
+        // Add slogans
+        if (marketingContent.slogans.length > 0) {
+          content += `**🎯 Slogans & Taglines:**\n`;
+          marketingContent.slogans.forEach((slogan, index) => {
+            content += `${index + 1}. ${slogan}\n`;
+          });
+          content += `\n`;
+        }
+
+        // Add campaign messages
+        if (marketingContent.campaign_messages.length > 0) {
+          content += `**📢 Campaign Messages:**\n`;
+          marketingContent.campaign_messages.forEach((msg, index) => {
+            content += `${index + 1}. **${msg.title}**: ${msg.message}\n\n`;
+          });
+        }
+
+        // Add social media posts
+        if (marketingContent.social_media_posts.length > 0) {
+          content += `**📱 Social Media Posts:**\n`;
+          marketingContent.social_media_posts.forEach((post, index) => {
+            content += `${index + 1}. **${post.platform}** (${post.type}):\n${
+              post.post
+            }\n\n`;
+          });
+        }
+
+        content += `Click "Launch Full Story" below to see your complete marketing toolkit!`;
+        return content;
+      };
+
       const aiResponse = {
         id: messages.length + 2,
         type: "bot" as const,
-        content: `🚀 **LAUNCH STORY GENERATED FOR "${productIdea}"**
-
-**✨ Your AI-Generated Marketing Package:**
-
-🎯 **Slogans Created**: ${marketingContent.slogans.length} catchy taglines
-📢 **Campaign Messages**: ${marketingContent.campaign_messages.length} strategic approaches  
-📱 **Social Posts**: ${marketingContent.social_media_posts.length} ready-to-publish posts
-
-**🔥 Sample Preview:**
-• **Top Slogan**: "${marketingContent.slogans[0]}"
-• **Key Message**: "${marketingContent.campaign_messages[0]?.title}: ${marketingContent.campaign_messages[0]?.message.substring(0, 100)}..."
-• **Social Ready**: ${marketingContent.social_media_posts.length} posts for Instagram, Twitter, LinkedIn & more
-
-**📈 Complete Package Includes:**
-• Professional slogans & taglines
-• Strategic campaign messages (Problem-Solution, Social Proof, Emotional Appeal, Urgency)
-• Platform-optimized social media content
-• Copy-ready marketing materials
-
-Ready to launch your product story? Your complete marketing arsenal is waiting!`,
-        productIdea: productIdea,
+        content: formatContent(),
+        productIdea: productDescription,
       };
       setMessages((prev) => [...prev, aiResponse]);
     } catch (error) {
       console.error("Failed to generate marketing content:", error);
-      
-      // Fallback response
+
+      // Error response - no fallback mock data
       const aiResponse = {
         id: messages.length + 2,
         type: "bot" as const,
-        content: `🚀 **LAUNCH STORY INITIATED FOR "${productIdea}"**
+        content: `❌ **Unable to Generate Marketing Content**
 
-**🎯 Your Launch Narrative:**
-📖 **The Story**: From problem to breakthrough - "${productIdea}" isn't just a product, it's the hero of your customer's journey
-🎬 **The Hook**: "What if I told you that ${productIdea} could change everything you thought you knew about [category]?"
-⚡ **The Drop**: Strategic launch sequence designed to create anticipation, exclusivity, and viral momentum
+I'm having trouble connecting to the MarketMind AI service right now. This could be because:
 
-**🔥 Launch Campaign Highlights:**
-• **Pre-Launch Teasers**: Build mystery and anticipation
-• **Hero Story**: Position your product as the solution everyone's been waiting for
-• **Social Proof Pipeline**: Turn early adopters into story ambassadors
-• **Viral Launch Hooks**: Shareable moments that amplify your story
-• **Community Building**: Create a movement, not just customers
+• The backend service isn't running
+• Network connectivity issues
+• API service temporarily unavailable
 
-**📱 Story-Driven Content:**
-• **Launch Announcement Posts**: Multi-platform story rollout
-• **Behind-the-Scenes**: The journey that led to this breakthrough
-• **Customer Hero Stories**: Real transformations, real impact
-• **Countdown Campaigns**: Building anticipation for the big drop
+**To fix this:**
+1. Make sure the MarketMind backend is running on port 8000
+2. Check your network connection
+3. Try again in a few moments
 
-Ready to turn your product drop into a legendary launch story? Click "Launch Full Story" to see your complete narrative strategy!`,
-        productIdea: productIdea,
+Would you like to try again, or would you prefer to start the backend service first?`,
+        productIdea: productDescription,
       };
       setMessages((prev) => [...prev, aiResponse]);
     } finally {
@@ -327,7 +336,7 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
 
                 <div className="flex gap-2">
                   <Textarea
-                    placeholder="Describe your product idea for launch..."
+                    placeholder="Describe your product in detail - what it does, who it's for, what problem it solves, key features, etc..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     className="flex-1 min-h-[80px] max-h-[120px] resize-none"
@@ -356,7 +365,9 @@ Ready to turn your product drop into a legendary launch story? Click "Launch Ful
                     <Button
                       size="sm"
                       onClick={handleSendMessage}
-                      disabled={(!message.trim() && !selectedImage) || isGenerating}
+                      disabled={
+                        (!message.trim() && !selectedImage) || isGenerating
+                      }
                     >
                       {isGenerating ? (
                         <Loader2 className="w-4 h-4 animate-spin" />

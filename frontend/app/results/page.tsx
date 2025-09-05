@@ -8,92 +8,27 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Copy, Check, ArrowLeft, Sparkles, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { generateMarketingContent, MarketingResponse, CampaignMessage, SocialMediaPost } from "@/lib/api";
+import {
+  generateMarketingContent,
+  MarketingResponse,
+  CampaignMessage,
+  SocialMediaPost,
+} from "@/lib/api";
 
 export default function Results() {
   const searchParams = useSearchParams();
-  const productIdea = searchParams.get("product") || "Your Product";
+  const productDescription = searchParams.get("product") || "Your Product";
   const [copiedItems, setCopiedItems] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [marketingData, setMarketingData] = useState<MarketingResponse | null>(null);
-
-  // Fallback dummy data (same as before, but organized better)
-  const fallbackData = {
-    slogans: [
-      `${productIdea} - Revolutionizing Your Experience`,
-      `The Future is Here with ${productIdea}`,
-      `${productIdea}: Where Innovation Meets Excellence`,
-      `Discover the Power of ${productIdea}`,
-      `${productIdea} - Beyond Your Expectations`,
-      `Transform Your World with ${productIdea}`,
-      `${productIdea}: The Smart Choice`,
-      `Unleash Potential with ${productIdea}`,
-    ],
-    campaignMessages: [
-      {
-        title: "Problem-Solution Focus",
-        message: `Tired of outdated solutions? ${productIdea} solves what others can't. Experience the difference innovation makes.`,
-      },
-      {
-        title: "Social Proof", 
-        message: `Join thousands who've already transformed their experience with ${productIdea}. Don't get left behind – be part of the revolution.`,
-      },
-      {
-        title: "Emotional Appeal",
-        message: `Imagine a world where your daily tasks become effortless. ${productIdea} doesn't just promise change – it delivers transformation that you'll feel from day one.`,
-      },
-      {
-        title: "Urgency & Scarcity",
-        message: `Limited time offer: Be among the first to experience ${productIdea}. Early adopters get exclusive benefits and priority support. Act now before it's too late.`,
-      },
-      {
-        title: "Value Proposition",
-        message: `Why settle for ordinary when you can have extraordinary? ${productIdea} combines premium quality with unbeatable value, giving you more for less.`,
-      },
-    ],
-    socialMediaPosts: [
-      {
-        platform: "Instagram",
-        post: `✨ Just discovered ${productIdea} and I'm obsessed! 😍 Who else needs this in their life? #${productIdea.replace(
-          /\s+/g,
-          ""
-        )} #GameChanger #MustHave`,
-        type: "Visual Story",
-      },
-      {
-        platform: "Twitter",
-        post: `🔥 Hot take: ${productIdea} is about to change everything. You heard it here first! 🚀 #Trending #${productIdea.replace(
-          /\s+/g,
-          ""
-        )}`,
-        type: "Viral Tweet",
-      },
-      {
-        platform: "LinkedIn",
-        post: `Professional insight: ${productIdea} represents a significant advancement in our field. Here's my analysis of how it's transforming our industry approach.`,
-        type: "Professional Insight",
-      },
-      {
-        platform: "TikTok",
-        post: `POV: You discover ${productIdea} and your life changes forever 🤯 #${productIdea.replace(
-          /\s+/g,
-          ""
-        )} #LifeHack #Viral`,
-        type: "Viral Video",
-      },
-      {
-        platform: "Facebook",
-        post: `🎯 Calling all innovators! Tired of the same old solutions? ${productIdea} has your back! ✅ Easy to use ✅ Proven results ✅ Money-back guarantee. Over 1,000 happy customers can't be wrong. Join the ${productIdea} family today!`,
-        type: "Community Engagement",
-      },
-    ],
-  };
+  const [marketingData, setMarketingData] = useState<MarketingResponse | null>(
+    null
+  );
 
   // Fetch marketing content on component mount
   useEffect(() => {
     const fetchMarketingContent = async () => {
-      if (!productIdea || productIdea === "Your Product") {
+      if (!productDescription || productDescription === "Your Product") {
         setIsLoading(false);
         return;
       }
@@ -101,28 +36,29 @@ export default function Results() {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const response = await generateMarketingContent({
-          product_name: productIdea,
-          description: "",
+          product_name: "", // Let Groq generate this
+          description: productDescription,
           target_audience: "",
           industry: "",
         });
-        
+
         setMarketingData(response);
       } catch (error) {
         console.error("Failed to fetch marketing content:", error);
-        setError("Failed to generate marketing content. Using sample content.");
-        // Don't set loading to false yet, we'll use fallback data
+        setError(
+          "Failed to generate marketing content. Please check if the backend service is running."
+        );
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchMarketingContent();
-  }, [productIdea]);
+  }, [productDescription]);
 
-  // Get data to display (API response or fallback)
+  // Get data to display (API response only)
   const getDisplayData = () => {
     if (marketingData) {
       return {
@@ -131,28 +67,38 @@ export default function Results() {
         socialMediaPosts: marketingData.social_media_posts,
       };
     }
-    return fallbackData;
+    return {
+      slogans: [],
+      campaignMessages: [],
+      socialMediaPosts: [],
+    };
   };
 
   const { slogans, campaignMessages, socialMediaPosts } = getDisplayData();
 
   // Group campaign messages by title for better display
-  const groupedCampaignMessages = campaignMessages.reduce((acc: Record<string, string[]>, message: CampaignMessage) => {
-    if (!acc[message.title]) {
-      acc[message.title] = [];
-    }
-    acc[message.title].push(message.message);
-    return acc;
-  }, {});
+  const groupedCampaignMessages = campaignMessages.reduce(
+    (acc: Record<string, string[]>, message: CampaignMessage) => {
+      if (!acc[message.title]) {
+        acc[message.title] = [];
+      }
+      acc[message.title].push(message.message);
+      return acc;
+    },
+    {}
+  );
 
   // Group social media posts by platform
-  const groupedSocialPosts = socialMediaPosts.reduce((acc: Record<string, SocialMediaPost[]>, post: SocialMediaPost) => {
-    if (!acc[post.platform]) {
-      acc[post.platform] = [];
-    }
-    acc[post.platform].push(post);
-    return acc;
-  }, {});
+  const groupedSocialPosts = socialMediaPosts.reduce(
+    (acc: Record<string, SocialMediaPost[]>, post: SocialMediaPost) => {
+      if (!acc[post.platform]) {
+        acc[post.platform] = [];
+      }
+      acc[post.platform].push(post);
+      return acc;
+    },
+    {}
+  );
 
   const copyToClipboard = async (text: string, itemId: string) => {
     try {
@@ -173,11 +119,88 @@ export default function Results() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background font-sans flex items-center justify-center" style={{ fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif' }}>
+      <div
+        className="min-h-screen bg-background font-sans flex items-center justify-center"
+        style={{
+          fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
-          <h2 className="text-xl font-semibold mb-2">Generating Marketing Content</h2>
-          <p className="text-muted-foreground">Creating your personalized marketing package...</p>
+          <h2 className="text-xl font-semibold mb-2">
+            Generating Marketing Content
+          </h2>
+          <p className="text-muted-foreground">
+            Creating your personalized marketing package...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state when no data is available
+  if (error && !marketingData) {
+    return (
+      <div
+        className="min-h-screen bg-background font-sans"
+        style={{
+          fontFamily: '"UberMove", "Helvetica Neue", Arial, sans-serif',
+        }}
+      >
+        <Navigation />
+        <div className="container mx-auto px-4 py-8 max-w-4xl">
+          <Link href="/">
+            <Button variant="outline" className="mb-8">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Chat
+            </Button>
+          </Link>
+
+          <div className="text-center">
+            <div className="mb-8">
+              <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">⚠️</span>
+              </div>
+              <h1 className="text-3xl font-bold mb-4">
+                Unable to Generate Marketing Content
+              </h1>
+              <p className="text-muted-foreground text-lg mb-6 max-w-2xl mx-auto">
+                We couldn&apos;t generate marketing content for your product.
+                This might be because:
+              </p>
+            </div>
+
+            <Card className="max-w-2xl mx-auto text-left">
+              <CardContent className="pt-6">
+                <ul className="space-y-3 mb-6">
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>
+                      The MarketMind backend service isn&apos;t running
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>Network connectivity issues</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0"></span>
+                    <span>API service temporarily unavailable</span>
+                  </li>
+                </ul>
+
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Make sure the backend is running on port 8000, then try
+                    again.
+                  </p>
+                  <Button onClick={() => window.location.reload()}>
+                    Try Again
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -212,10 +235,7 @@ export default function Results() {
                 </Badge>
               </div>
             )}
-            <h1 className="text-4xl font-bold mb-2">Marketing Results for</h1>
-            <h2 className="text-5xl font-black bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
-              {productIdea}
-            </h2>
+            <h1 className="text-4xl font-bold mb-2">Marketing Results</h1>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               Your comprehensive marketing toolkit with copy-ready slogans,
               campaign messages, and social media content.
@@ -263,7 +283,9 @@ export default function Results() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 📢 Campaign Message Strategies
-                <Badge variant="outline">{Object.keys(groupedCampaignMessages).length} approaches</Badge>
+                <Badge variant="outline">
+                  {Object.keys(groupedCampaignMessages).length} approaches
+                </Badge>
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -392,7 +414,10 @@ export default function Results() {
                       ),
                       "\n\nSOCIAL MEDIA POSTS:",
                       ...Object.entries(groupedSocialPosts).flatMap(
-                        ([platform, posts]) => [`\n${platform}:`, ...posts.map(p => p.post)]
+                        ([platform, posts]) => [
+                          `\n${platform}:`,
+                          ...posts.map((p) => p.post),
+                        ]
                       ),
                     ].join("\n");
                     copyToClipboard(allContent, "all-content");
